@@ -280,7 +280,9 @@ modulo limitations like 32-bit integers.
 >     in
 >         prelude ++ varsBlock ++ codeBlock ++ dumpBlock ++ postlude
 
-TODO Compute maximum stack depth -- Actually, I believe this is a fixed value?
+We never push more than 32 values onto the stack at any given time
+(actually, it's a lot less than that,) so we don't worry about computing
+the maximum stack depth here.
 
 > prelude  = ".assembly PLexceptGOTOprogram {}\n\
 >            \.method static public void main() il managed\n\
@@ -303,7 +305,7 @@ TODO Compute maximum stack depth -- Actually, I believe this is a fixed value?
 > makeLocalVarsBlock ((key, value):rest) =
 >     (formatLocal key value) ++ ", " ++ makeLocalVarsBlock rest
 
-> formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
+> formatLocal key value = "int32 " ++ key
 
 > makeDumpBlock env =
 >     let
@@ -326,51 +328,38 @@ Generate code for the given AST.
 >    (genCode env i) ++ (genCode env $ Block rest)
 > genCode env (Loop id n i) =
 >    let
->        nPos = fetch env n
 >        loopName = "_loop" ++ (show id)
 >        loopLabel = "LOOP" ++ (show id)
->        loopPos = fetch env loopName
 >        loopBody = genCode env i
 >    in
 >        "  // ---------- BEGIN " ++ loopLabel ++ "\n\
->        \  ldloc." ++ (show nPos) ++ "\n\
->        \  stloc." ++ (show loopPos) ++ "\n\
+>        \  ldloc " ++ n ++ "\n\
+>        \  stloc " ++ loopName ++ "\n\
 >        \  br.s " ++ loopLabel ++ "_CHECK\n\
 >        \  " ++ loopLabel ++ "_TOP:\n" ++
 >        loopBody ++
 >        "  // decrement " ++ loopName ++ "\n\
->        \  ldloc." ++ (show loopPos) ++ "\n\
+>        \  ldloc " ++ loopName ++ "\n\
 >        \  ldc.i4.1\n\
 >        \  sub\n\
->        \  stloc." ++ (show loopPos) ++ "\n\
+>        \  stloc " ++ loopName ++ "\n\
 >        \  " ++ loopLabel ++ "_CHECK:\n\
->        \  ldloc." ++ (show loopPos) ++ "\n\
+>        \  ldloc " ++ loopName ++ "\n\
 >        \  ldc.i4.0\n\
 >        \  bge.s " ++ loopLabel ++ "_TOP\n\
 >        \  // ---------- END " ++ loopLabel ++ "\n"
 
 > genCode env (AssignZero n) =
->    let
->        pos = fetch env n
->    in
->        "  ldc.i4.0\n\
->        \  stloc." ++ (show pos) ++ "\n"
+>    "  ldc.i4.0\n\
+>    \  stloc " ++ n ++ "\n"
 > genCode env (AssignOther n m) =
->    let
->        nPos = fetch env n
->        mPos = fetch env m
->    in
->        "  ldloc." ++ (show mPos) ++ "\n\
->        \  stloc." ++ (show nPos) ++ "\n"
+>    "  ldloc " ++ m ++ "\n\
+>    \  stloc " ++ n ++ "\n"
 > genCode env (AssignIncr n m) =
->    let
->        nPos = fetch env n
->        mPos = fetch env m
->    in
->        "  ldloc." ++ (show mPos) ++ "\n\
->        \  ldc.i4.1\n\
->        \  add\n\
->        \  stloc." ++ (show nPos) ++ "\n"
+>    "  ldloc " ++ m ++ "\n\
+>    \  ldc.i4.1\n\
+>    \  add\n\
+>    \  stloc " ++ n ++ "\n"
 
 Driver functions for compiler.
 
