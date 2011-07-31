@@ -148,6 +148,11 @@ of the three variants, and we're going to use `try` to backtrack.
 >     Left perr -> show perr
 >     Right prog -> show prog
 
+> parseFile fileName = do
+>     programText <- readFile fileName
+>     outputText <- return $ pa programText
+>     putStrLn outputText
+
 Environments
 ------------
 
@@ -193,6 +198,11 @@ changed by the execution of an assignment statement."
 >     Left perr -> show perr
 >     Right prog -> show $ Map.toList $ eval empty prog
 
+> runFile fileName = do
+>     programText <- readFile fileName
+>     outputText <- return $ run programText
+>     putStrLn outputText
+
 Static Analyzer
 ---------------
 
@@ -207,7 +217,7 @@ Label every loop used in the program with a unique ID.
 >     let
 >         (i', id') = labelLoops i id
 >     in
->         (Loop id n i', id'+1)
+>         (Loop id' n i', id'+1)
 > labelLoops other id = (other, id)
 
 > labelList [] id = ([], id)
@@ -217,6 +227,10 @@ Label every loop used in the program with a unique ID.
 >         (xs', id'') = labelList xs id'
 >     in
 >         ((x':xs'), id'')
+
+> testLoopLabeling s = case parse program "" s of
+>     Left perr -> show perr
+>     Right prog -> show (labelLoops prog 0)
 
 Gather all variables used in the program.  This includes internal variables
 to be used as loop counters.  This assumes loops have already been labeled.
@@ -248,7 +262,6 @@ to be used as loop counters.  This assumes loops have already been labeled.
 >     in
 >         register env' m count'
 
-
 Compiler
 --------
 
@@ -260,7 +273,7 @@ modulo limitations like 32-bit integers.
 > translate ast =
 >     let
 >         (ast', _) = labelLoops ast 0
->         (env, count) = gatherVars empty 0 ast'
+>         (env, _) = gatherVars empty 0 ast'
 >         varsBlock = makeVarsBlock env
 >         codeBlock = genCode env ast'
 >         dumpBlock = makeDumpBlock env
@@ -331,7 +344,9 @@ Generate code for the given AST.
 >        \  sub\n\
 >        \  stloc." ++ (show loopPos) ++ "\n\
 >        \  " ++ loopLabel ++ "_CHECK:\n\
->        \  // XXX is " ++ loopName ++ " > 0?  jump to " ++ loopLabel ++ "_TOP\n\
+>        \  ldloc." ++ (show loopPos) ++ "\n\
+>        \  ldc.i4.0\n\
+>        \  bge.s " ++ loopLabel ++ "_TOP\n\
 >        \  // ---------- END " ++ loopLabel ++ "\n"
 
 > genCode env (AssignZero n) =
