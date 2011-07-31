@@ -164,12 +164,12 @@ Environments
 >         Just value = Map.lookup name env
 >     in
 >         value
-> register env name count =
+> register env name =
 >     case Map.lookup name env of
 >         Just value ->
->             (env, count)
+>             env
 >         Nothing ->
->             (store env name count, count + 1)
+>             store env name 0
 
 Evaluator
 ---------
@@ -235,32 +235,24 @@ Label every loop used in the program with a unique ID.
 Gather all variables used in the program.  This includes internal variables
 to be used as loop counters.  This assumes loops have already been labeled.
 
-> gatherVars env count (Block []) = (env, count)
-> gatherVars env count (Block (i:rest)) =
+> gatherVars env (Block []) = env
+> gatherVars env (Block (i:rest)) =
 >     let
->         (env', count') = gatherVars env count i
->         (env'', count'') = gatherVars env' count' $ Block rest
+>         env' = gatherVars env i
 >     in
->         (env'', count'')
-> gatherVars env count (Loop id n i) =
+>         gatherVars env' (Block rest)
+> gatherVars env (Loop id n i) =
 >     let
->         (env', count') = register env n count
->         (env'', count'') = gatherVars env' count' i
->         (env''', count''') = register env'' ("_loop" ++ (show id)) count''
+>         env' = register env n
+>         env'' = gatherVars env' i
 >     in
->         (env''', count''')
-> gatherVars env count (AssignZero n) =
->     register env n count
-> gatherVars env count (AssignOther n m) =
->     let
->         (env', count') = register env n count
->     in
->         register env' m count'
-> gatherVars env count (AssignIncr n m) =
->     let
->         (env', count') = register env n count
->     in
->         register env' m count'
+>         register env'' ("_loop" ++ (show id))
+> gatherVars env (AssignZero n) =
+>     register env n
+> gatherVars env (AssignOther n m) =
+>     register (register env n) m
+> gatherVars env (AssignIncr n m) =
+>     register (register env n) m
 
 Compiler
 --------
@@ -273,7 +265,7 @@ modulo limitations like 32-bit integers.
 > translate ast =
 >     let
 >         (ast', _) = labelLoops ast 0
->         (env, _) = gatherVars empty 0 ast'
+>         env = gatherVars empty ast'
 >         varsBlock = makeVarsBlock env
 >         codeBlock = genCode env ast'
 >         dumpBlock = makeDumpBlock env
