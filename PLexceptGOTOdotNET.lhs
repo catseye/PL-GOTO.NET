@@ -312,21 +312,27 @@ Generate code for the given AST.
 > genCode env (Block (i:rest)) =
 >    (genCode env i) ++ (genCode env $ Block rest)
 > genCode env (Loop id n i) =
->    "  // TODO: implement loops!\n"
-
-TODO Implement loops like so:
-
-    // *****************************************************
-    // loop template:  each loop has its own id, x, and its own temp var
-    // tempx <- loopvar
-    // br.s LOOPX_CHECK
-    // LOOPX_TOP:
-    // <<loop body>>
-    // tempx--;
-    // LOOPX_CHECK:
-    // is tempx > 0?  jump to LOOPX_TOP
-    // *****************************************************
-
+>    let
+>        nPos = fetch env n
+>        loopName = "_loop" ++ (show id)
+>        loopLabel = "LOOP" ++ (show id)
+>        loopPos = fetch env loopName
+>        loopBody = genCode env i
+>    in
+>        "  // ---------- BEGIN " ++ loopLabel ++ "\n\
+>        \  ldloc." ++ (show nPos) ++ "\n\
+>        \  stloc." ++ (show loopPos) ++ "\n\
+>        \  br.s " ++ loopLabel ++ "_CHECK\n\
+>        \  " ++ loopLabel ++ "_TOP:\n" ++
+>        loopBody ++
+>        "  // decrement " ++ loopName ++ "\n\
+>        \  ldloc." ++ (show loopPos) ++ "\n\
+>        \  ldc.i4.1\n\
+>        \  sub\n\
+>        \  stloc." ++ (show loopPos) ++ "\n\
+>        \  " ++ loopLabel ++ "_CHECK:\n\
+>        \  // XXX is " ++ loopName ++ " > 0?  jump to " ++ loopLabel ++ "_TOP\n\
+>        \  // ---------- END " ++ loopLabel ++ "\n"
 
 > genCode env (AssignZero n) =
 >    let
