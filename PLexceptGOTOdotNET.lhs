@@ -196,34 +196,6 @@ changed by the execution of an assignment statement."
 Static Analyzer
 ---------------
 
-Gather all variables used in the program.
-
-> gatherVars env count (Block []) = (env, count)
-> gatherVars env count (Block (i:rest)) =
->     let
->         (env', count') = gatherVars env count i
->         (env'', count'') = gatherVars env' count' $ Block rest
->     in
->         (env'', count'')
-> gatherVars env count (Loop _ n i) =
->     let
->         (env', count') = register env n count
->         (env'', count'') = gatherVars env' count' i
->     in
->         (env'', count'')
-> gatherVars env count (AssignZero n) =
->     register env n count
-> gatherVars env count (AssignOther n m) =
->     let
->         (env', count') = register env n count
->     in
->         register env' m count'
-> gatherVars env count (AssignIncr n m) =
->     let
->         (env', count') = register env n count
->     in
->         register env' m count'
-
 Label every loop used in the program with a unique ID.
 
 > labelLoops (Block list) id =
@@ -246,6 +218,37 @@ Label every loop used in the program with a unique ID.
 >     in
 >         ((x':xs'), id'')
 
+Gather all variables used in the program.  This includes internal variables
+to be used as loop counters.  This assumes loops have already been labeled.
+
+> gatherVars env count (Block []) = (env, count)
+> gatherVars env count (Block (i:rest)) =
+>     let
+>         (env', count') = gatherVars env count i
+>         (env'', count'') = gatherVars env' count' $ Block rest
+>     in
+>         (env'', count'')
+> gatherVars env count (Loop id n i) =
+>     let
+>         (env', count') = register env n count
+>         (env'', count'') = gatherVars env' count' i
+>         (env''', count''') = register env'' ("_loop" ++ (show id)) count''
+>     in
+>         (env''', count''')
+> gatherVars env count (AssignZero n) =
+>     register env n count
+> gatherVars env count (AssignOther n m) =
+>     let
+>         (env', count') = register env n count
+>     in
+>         register env' m count'
+> gatherVars env count (AssignIncr n m) =
+>     let
+>         (env', count') = register env n count
+>     in
+>         register env' m count'
+
+
 Compiler
 --------
 
@@ -256,13 +259,15 @@ modulo limitations like 32-bit integers.
 
 > translate ast =
 >     let
->         (env, count) = gatherVars empty 0 ast
->         (ast', numLoops) = labelLoops ast 0
->         varsBlock = makeVarsBlock env count numLoops
->         codeBlock = genCode env ast
+>         (ast', _) = labelLoops ast 0
+>         (env, count) = gatherVars empty 0 ast'
+>         varsBlock = makeVarsBlock env
+>         codeBlock = genCode env ast'
 >         dumpBlock = makeDumpBlock env
 >     in
 >         prelude ++ varsBlock ++ codeBlock ++ dumpBlock ++ postlude
+
+TODO Compute maximum stack depth -- Actually, I believe this is a fixed value?
 
 > prelude  = ".assembly PLexceptGOTOprogram {}\n\
 >            \.method static public void main() il managed\n\
@@ -273,26 +278,19 @@ modulo limitations like 32-bit integers.
 > postlude = "  ret\n\
 >            \}\n"
 
-> makeVarsBlock :: Map.Map String Integer -> Integer -> Integer -> String
-
-> makeVarsBlock env count numLoops =
+> makeVarsBlock env =
 >     let
 >         localVarsBlock = makeLocalVarsBlock $ Map.toAscList env
->         loopVarsBlock = makeLoopVarsBlock count numLoops
 >     in
->         "  .locals init (" ++ localVarsBlock ++ loopVarsBlock ++ ")\n"
+>         "  .locals init (" ++ localVarsBlock ++ ")\n"
 
 > makeLocalVarsBlock [] = ""
+> makeLocalVarsBlock [(key, value)] =
+>     formatLocal key value
 > makeLocalVarsBlock ((key, value):rest) =
 >     (formatLocal key value) ++ ", " ++ makeLocalVarsBlock rest
 
 > formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
-
-> makeLoopVarsBlock count 0 = ""
-> makeLoopVarsBlock count 1 = "[" ++ (show count) ++ "] int32 loop0"
-> makeLoopVarsBlock count n =
->     "[" ++ (show count) ++ "] int32 loop" ++ (show (n-1)) ++ ", " ++
->     makeLoopVarsBlock (count+1) (n-1)
 
 > makeDumpBlock env =
 >     let
@@ -300,7 +298,9 @@ modulo limitations like 32-bit integers.
 >     in
 >         foldl (++) "" dumps
 
-> formatDump (name, pos) = "  ldstr \"" ++ name ++ "=\"\n\
+> formatDump (name, pos)
+>     | take 5 name == "_loop" = ""
+>     | otherwise        = "  ldstr \"" ++ name ++ "=\"\n\
 >                          \  call void [mscorlib]System.Console::Write(string)\n\
 >                          \  ldloca.s " ++ name ++ "\n\
 >                          \  call instance string [mscorlib]System.Int32::ToString()\n\
@@ -313,6 +313,21 @@ Generate code for the given AST.
 >    (genCode env i) ++ (genCode env $ Block rest)
 > genCode env (Loop id n i) =
 >    "  // TODO: implement loops!\n"
+
+TODO Implement loops like so:
+
+    // *****************************************************
+    // loop template:  each loop has its own id, x, and its own temp var
+    // tempx <- loopvar
+    // br.s LOOPX_CHECK
+    // LOOPX_TOP:
+    // <<loop body>>
+    // tempx--;
+    // LOOPX_CHECK:
+    // is tempx > 0?  jump to LOOPX_TOP
+    // *****************************************************
+
+
 > genCode env (AssignZero n) =
 >    let
 >        pos = fetch env n
@@ -346,17 +361,3 @@ Driver functions for compiler.
 >     programText <- readFile fileName
 >     outputText <- return $ compile programText
 >     putStrLn outputText
-
-TODO Count all loops, allocate loop vars, compute maximum stack depth
-TODO Implement loops like so:
-
-    // *****************************************************
-    // loop template:  each loop has its own id, x, and its own temp var
-    // tempx <- loopvar
-    // br.s LOOPX_CHECK
-    // LOOPX_TOP:
-    // <<loop body>>
-    // tempx--;
-    // LOOPX_CHECK:
-    // is tempx > 0?  jump to LOOPX_TOP
-    // *****************************************************
