@@ -14,7 +14,7 @@ variant was made because it is computationally more interesting:
 PL-{GOTO} can express exactly the primitive recursive functions, and
 thus PL-{GOTO} programs always terminate.  On the other hand, all
 algorithms that can run in nondeterminstic exponential time -- which
-includes almost all practical algorithms - can be expressed primitive
+includes almost all practical algorithms -- can be expressed primitive
 recursively (although their primitive recursive version may be
 drastically less efficient.)
 
@@ -143,15 +143,24 @@ of the three variants, and we're going to use `try` to backtrack.
 >     Left perr -> show perr
 >     Right prog -> show prog
 
-Evaluator
----------
+Environments
+------------
 
+> empty = Map.empty
+> singleton = Map.singleton
 > store env name value = Map.insert name value env
 > fetch env name =
 >     let
 >         Just value = Map.lookup name env
 >     in
 >         value
+
+Entries in env2 override those in env1.
+
+> merge env1 env2 = Map.union env2 env1
+
+Evaluator
+---------
 
 > eval env (Block []) = env
 > eval env (Block (i:rest)) =
@@ -175,7 +184,7 @@ changed by the execution of an assignment statement."
 
 > run s = case parse program "" s of
 >     Left perr -> show perr
->     Right prog -> show $ Map.toList $ eval Map.empty prog
+>     Right prog -> show $ Map.toList $ eval empty prog
 
 Compiler
 --------
@@ -185,20 +194,53 @@ program and produces a string containing an MSIL program
 (suitable as input to `ilasm`) which computes the same function,
 modulo limitations like 32-bit integers.
 
-TODO write this.  What follows is just rough notes.
+> translate ast =
+>     let
+>         varsBlock = makeVarsBlock ast
+>     in
+>         prelude ++ varsBlock ++ postlude
 
-* Boilerplate
+> prelude  = ".assembly PLexceptGOTOprogram {}\n\
+>            \.method static public void main() il managed\n\
+>            \{\n\
+>            \  .entrypoint\n\
+>            \  .maxstack 32 // a guess\n"
+> 
+> postlude = "  ret\n\
+>            \}\n"
 
-prelude = """
-.assembly PLexceptGOTOprogram {}
+> makeVarsBlock ast =
+>     let
+>         vars = gatherVars ast
+>     in
+>         "  .locals init () // " ++ (show vars) ++ "\n"
 
-.method static public void main() il managed
-{
-    .entrypoint
-    .maxstack 32 // to be computed by the compiler.  Just guess high for now
-"""
+Gather all variables used in the program.
 
-* Gather all variables, allocate them
+> gatherVars (Block []) = empty 
+> gatherVars (Block (i:rest)) =
+>     merge (gatherVars i) (gatherVars $ Block rest)
+> gatherVars (Loop n i) =
+>     merge (singleton n 0) (gatherVars i)
+> gatherVars (AssignZero n) =
+>     singleton n 0
+> gatherVars (AssignOther n m) =
+>     store (singleton n 0) m 0
+> gatherVars (AssignIncr n m) =
+>     store (singleton n 0) m 0
+
+> compile s = case parse program "" s of
+>     Left perr -> show perr
+>     Right prog -> translate prog
+
+A little driver function...
+
+> compileFile fileName = do
+>     programText <- readFile fileName
+>     outputText <- return $ compile programText
+>     putStrLn outputText
+
+XXX TODO complete this.  What follows is just rough notes.
 
 locals = """
     .locals init ([0] int32 n, // to be determined by the compiler.
@@ -247,8 +289,5 @@ Loop:
     // is tempx > 0?  jump to LOOPX_TOP
     // *****************************************************
 
-postlude = """
-    ret
-}
 """
 
