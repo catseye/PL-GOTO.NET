@@ -26,6 +26,9 @@ the name.)
 > import Text.ParserCombinators.Parsec
 > import qualified Data.Map as Map
 
+AST
+---
+
 Grammar for the full (but not "extended") PL language, from the book:
 
     <letter> = A ∪ B ∪ ... ∪ Z
@@ -74,6 +77,9 @@ basically collapses to "assignment".
 >                  | AssignOther Name Name
 >                  | AssignIncr Name Name
 >    deriving (Eq, Show, Read)
+
+Parser
+------
 
 > name :: Parser Name
 > name = do
@@ -137,7 +143,8 @@ of the three variants, and we're going to use `try` to backtrack.
 >     Left perr -> show perr
 >     Right prog -> show prog
 
-Evaluator follows.  Sorry, no MSIL compiler yet :(
+Evaluator
+---------
 
 > store env name value = Map.insert name value env
 > fetch env name =
@@ -169,3 +176,79 @@ changed by the execution of an assignment statement."
 > run s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show $ Map.toList $ eval Map.empty prog
+
+Compiler
+--------
+
+The compiler takes an abstract representation of a PL-{GOTO}
+program and produces a string containing an MSIL program
+(suitable as input to `ilasm`) which computes the same function,
+modulo limitations like 32-bit integers.
+
+TODO write this.  What follows is just rough notes.
+
+* Boilerplate
+
+prelude = """
+.assembly PLexceptGOTOprogram {}
+
+.method static public void main() il managed
+{
+    .entrypoint
+    .maxstack 32 // to be computed by the compiler.  Just guess high for now
+"""
+
+* Gather all variables, allocate them
+
+locals = """
+    .locals init ([0] int32 n, // to be determined by the compiler.
+                  [1] int32 i, // all variables used in program, here.
+		  ...)
+"""
+
+* Count all loops, allocate loop vars, compute maximum stack depth
+
+AssignZero:
+
+    // *****************************************************
+    // i <- 0
+    // *****************************************************
+    ldc.i4.0                    // load constant onto stack
+    stloc.1                     // store to variable 1
+
+AssignOther:
+
+    // *****************************************************
+    // i <- n
+    // *****************************************************
+    ldloc.0                     // load variable 0 to stack
+    stloc.1                     // store to variable 1
+
+AssignIncr:
+
+    // *****************************************************
+    // i <- n + 1
+    // *****************************************************
+    ldloc.0                     // load variable 0 to stack
+    ldc.i4.1                    // load constant onto stack
+    add
+    stloc.1                     // store to variable 1
+
+Loop:
+
+    // *****************************************************
+    // loop template:  each loop has its own id, x, and its own temp var
+    // tempx <- loopvar
+    // br.s LOOPX_CHECK
+    // LOOPX_TOP:
+    // <<loop body>>
+    // tempx--;
+    // LOOPX_CHECK:
+    // is tempx > 0?  jump to LOOPX_TOP
+    // *****************************************************
+
+postlude = """
+    ret
+}
+"""
+
