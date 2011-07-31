@@ -198,9 +198,11 @@ modulo limitations like 32-bit integers.
 
 > translate ast =
 >     let
->         varsBlock = makeVarsBlock ast
+>         (env, count) = gatherVars empty 0 ast
+>         varsBlock = makeVarsBlock env
+>         dumpBlock = makeDumpBlock env
 >     in
->         prelude ++ varsBlock ++ postlude
+>         prelude ++ varsBlock ++ dumpBlock ++ postlude
 
 > prelude  = ".assembly PLexceptGOTOprogram {}\n\
 >            \.method static public void main() il managed\n\
@@ -211,9 +213,8 @@ modulo limitations like 32-bit integers.
 > postlude = "  ret\n\
 >            \}\n"
 
-> makeVarsBlock ast =
+> makeVarsBlock env =
 >     let
->         (env, count) = gatherVars empty 0 ast
 >         localsBlock = makeLocalsBlock $ Map.toAscList env
 >     in
 >         "  .locals init (" ++ localsBlock ++ ")\n"
@@ -225,6 +226,18 @@ modulo limitations like 32-bit integers.
 >     (formatLocal key value) ++ ", " ++ makeLocalsBlock rest
 
 > formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
+
+> makeDumpBlock env =
+>     let
+>         dumps = map (formatDump) (Map.toAscList env)
+>     in
+>         foldl (++) "" dumps
+
+> formatDump (name, pos) = "  ldstr \"" ++ name ++ "=\"\n\
+>                          \  call void [mscorlib]System.Console::Write(string)\n\
+>                          \  ldloca.s " ++ name ++ "\n\
+>                          \  call instance string [mscorlib]System.Int32::ToString()\n\
+>                          \  call void [mscorlib]System.Console::WriteLine(string)\n"
 
 Gather all variables used in the program.
 
@@ -266,12 +279,6 @@ A little driver function...
 >     putStrLn outputText
 
 XXX TODO complete this.  What follows is just rough notes.
-
-locals = """
-    .locals init ([0] int32 n, // to be determined by the compiler.
-                  [1] int32 i, // all variables used in program, here.
-		  ...)
-"""
 
 * Count all loops, allocate loop vars, compute maximum stack depth
 
