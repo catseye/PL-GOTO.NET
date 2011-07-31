@@ -188,57 +188,8 @@ changed by the execution of an assignment statement."
 >     Left perr -> show perr
 >     Right prog -> show $ Map.toList $ eval empty prog
 
-Compiler
---------
-
-The compiler takes an abstract representation of a PL-{GOTO}
-program and produces a string containing an MSIL program
-(suitable as input to `ilasm`) which computes the same function,
-modulo limitations like 32-bit integers.
-
-> translate ast =
->     let
->         (env, count) = gatherVars empty 0 ast
->         varsBlock = makeVarsBlock env
->         codeBlock = genCode env ast
->         dumpBlock = makeDumpBlock env
->     in
->         prelude ++ varsBlock ++ codeBlock ++ dumpBlock ++ postlude
-
-> prelude  = ".assembly PLexceptGOTOprogram {}\n\
->            \.method static public void main() il managed\n\
->            \{\n\
->            \  .entrypoint\n\
->            \  .maxstack 32 // a guess\n"
-> 
-> postlude = "  ret\n\
->            \}\n"
-
-> makeVarsBlock env =
->     let
->         localsBlock = makeLocalsBlock $ Map.toAscList env
->     in
->         "  .locals init (" ++ localsBlock ++ ")\n"
-
-> makeLocalsBlock [] = ""
-> makeLocalsBlock [(key, value)] =
->     formatLocal key value
-> makeLocalsBlock ((key, value):rest) =
->     (formatLocal key value) ++ ", " ++ makeLocalsBlock rest
-
-> formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
-
-> makeDumpBlock env =
->     let
->         dumps = map (formatDump) (Map.toAscList env)
->     in
->         foldl (++) "" dumps
-
-> formatDump (name, pos) = "  ldstr \"" ++ name ++ "=\"\n\
->                          \  call void [mscorlib]System.Console::Write(string)\n\
->                          \  ldloca.s " ++ name ++ "\n\
->                          \  call instance string [mscorlib]System.Int32::ToString()\n\
->                          \  call void [mscorlib]System.Console::WriteLine(string)\n"
+Static Analyzer
+---------------
 
 Gather all variables used in the program.
 
@@ -267,6 +218,73 @@ Gather all variables used in the program.
 >         (env', count') = register env n count
 >     in
 >         register env' m count'
+
+Count the loops used in the program.
+
+> countLoops (Block []) = 0
+> countLoops (Block (i:rest)) = (countLoops i) + (countLoops $ Block rest)
+> countLoops (Loop _ i) = 1 + countLoops i
+> countLoops _ = 0
+
+Compiler
+--------
+
+The compiler takes an abstract representation of a PL-{GOTO}
+program and produces a string containing an MSIL program
+(suitable as input to `ilasm`) which computes the same function,
+modulo limitations like 32-bit integers.
+
+> translate ast =
+>     let
+>         (env, count) = gatherVars empty 0 ast
+>         numLoops = countLoops ast
+>         varsBlock = makeVarsBlock env count numLoops
+>         codeBlock = genCode env ast
+>         dumpBlock = makeDumpBlock env
+>     in
+>         prelude ++ varsBlock ++ codeBlock ++ dumpBlock ++ postlude
+
+> prelude  = ".assembly PLexceptGOTOprogram {}\n\
+>            \.method static public void main() il managed\n\
+>            \{\n\
+>            \  .entrypoint\n\
+>            \  .maxstack 32 // a guess\n"
+> 
+> postlude = "  ret\n\
+>            \}\n"
+
+> makeVarsBlock :: Map.Map String Integer -> Integer -> Integer -> String
+
+> makeVarsBlock env count numLoops =
+>     let
+>         localVarsBlock = makeLocalVarsBlock $ Map.toAscList env
+>         loopVarsBlock = makeLoopVarsBlock count numLoops
+>     in
+>         "  .locals init (" ++ localVarsBlock ++ loopVarsBlock ++ ")\n"
+
+> makeLocalVarsBlock [] = ""
+> makeLocalVarsBlock ((key, value):rest) =
+>     (formatLocal key value) ++ ", " ++ makeLocalVarsBlock rest
+
+> formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
+
+> makeLoopVarsBlock count 0 = ""
+> makeLoopVarsBlock count 1 = "[" ++ (show count) ++ "] int32 loop1"
+> makeLoopVarsBlock count n =
+>     "[" ++ (show count) ++ "] int32 loop" ++ (show n) ++ ", " ++
+>     makeLoopVarsBlock (count+1) (n-1)
+
+> makeDumpBlock env =
+>     let
+>         dumps = map (formatDump) (Map.toAscList env)
+>     in
+>         foldl (++) "" dumps
+
+> formatDump (name, pos) = "  ldstr \"" ++ name ++ "=\"\n\
+>                          \  call void [mscorlib]System.Console::Write(string)\n\
+>                          \  ldloca.s " ++ name ++ "\n\
+>                          \  call instance string [mscorlib]System.Int32::ToString()\n\
+>                          \  call void [mscorlib]System.Console::WriteLine(string)\n"
 
 Generate code for the given AST.
 
