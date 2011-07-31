@@ -200,9 +200,10 @@ modulo limitations like 32-bit integers.
 >     let
 >         (env, count) = gatherVars empty 0 ast
 >         varsBlock = makeVarsBlock env
+>         codeBlock = genCode env ast
 >         dumpBlock = makeDumpBlock env
 >     in
->         prelude ++ varsBlock ++ dumpBlock ++ postlude
+>         prelude ++ varsBlock ++ codeBlock ++ dumpBlock ++ postlude
 
 > prelude  = ".assembly PLexceptGOTOprogram {}\n\
 >            \.method static public void main() il managed\n\
@@ -267,48 +268,49 @@ Gather all variables used in the program.
 >     in
 >         register env' m count'
 
+Generate code for the given AST.
+
+> genCode env (Block []) = ""
+> genCode env (Block (i:rest)) =
+>    (genCode env i) ++ (genCode env $ Block rest)
+> genCode env (Loop n i) =
+>    "  // TODO: implement loops!\n"
+> genCode env (AssignZero n) =
+>    let
+>        pos = fetch env n
+>    in
+>        "  ldc.i4.0\n\
+>        \  stloc." ++ (show pos) ++ "\n"
+> genCode env (AssignOther n m) =
+>    let
+>        nPos = fetch env n
+>        mPos = fetch env m
+>    in
+>        "  ldloc." ++ (show mPos) ++ "\n\
+>        \  stloc." ++ (show nPos) ++ "\n"
+> genCode env (AssignIncr n m) =
+>    let
+>        nPos = fetch env n
+>        mPos = fetch env m
+>    in
+>        "  ldloc." ++ (show mPos) ++ "\n\
+>        \  ldc.i4.1\n\
+>        \  add\n\
+>        \  stloc." ++ (show nPos) ++ "\n"
+
+Driver functions for compiler.
+
 > compile s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> translate prog
-
-A little driver function...
 
 > compileFile fileName = do
 >     programText <- readFile fileName
 >     outputText <- return $ compile programText
 >     putStrLn outputText
 
-XXX TODO complete this.  What follows is just rough notes.
-
-* Count all loops, allocate loop vars, compute maximum stack depth
-
-AssignZero:
-
-    // *****************************************************
-    // i <- 0
-    // *****************************************************
-    ldc.i4.0                    // load constant onto stack
-    stloc.1                     // store to variable 1
-
-AssignOther:
-
-    // *****************************************************
-    // i <- n
-    // *****************************************************
-    ldloc.0                     // load variable 0 to stack
-    stloc.1                     // store to variable 1
-
-AssignIncr:
-
-    // *****************************************************
-    // i <- n + 1
-    // *****************************************************
-    ldloc.0                     // load variable 0 to stack
-    ldc.i4.1                    // load constant onto stack
-    add
-    stloc.1                     // store to variable 1
-
-Loop:
+TODO Count all loops, allocate loop vars, compute maximum stack depth
+TODO Implement loops like so:
 
     // *****************************************************
     // loop template:  each loop has its own id, x, and its own temp var
@@ -320,6 +322,3 @@ Loop:
     // LOOPX_CHECK:
     // is tempx > 0?  jump to LOOPX_TOP
     // *****************************************************
-
-"""
-
