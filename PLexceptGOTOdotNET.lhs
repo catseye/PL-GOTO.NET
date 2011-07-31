@@ -72,11 +72,16 @@ basically collapses to "assignment".
 
 > type Name = String
 > data Instruction = Block [Instruction]
->                  | Loop Name Instruction
+>                  | Loop Integer Name Instruction
 >                  | AssignZero Name
 >                  | AssignOther Name Name
 >                  | AssignIncr Name Name
 >    deriving (Eq, Show, Read)
+
+In the representation of the Loop instruction, above, the Integer is an
+internal ID used by the compiler to uniquely identify the Loop in the program.
+The parser doesn't care, and will just give every loop the ID 0.  Only later,
+during static analysis, will these IDs be filled out.
 
 Parser
 ------
@@ -127,7 +132,7 @@ of the three variants, and we're going to use `try` to backtrack.
 >     strspc ";"
 >     p <- program
 >     strspc "END"
->     return (Loop n p)
+>     return (Loop 0 n p)
 
 > program :: Parser Instruction
 > program = do
@@ -172,7 +177,7 @@ Page 28: "Note that the above process does *not* change the
 value of the LOOP variable.  The value of a variable may only be
 changed by the execution of an assignment statement."
 
-> eval env (Loop n i) =
+> eval env (Loop _ n i) =
 >     loop (fetch env n) env i
 >     where
 >         loop 0 env i = env
@@ -200,7 +205,7 @@ Gather all variables used in the program.
 >         (env'', count'') = gatherVars env' count' $ Block rest
 >     in
 >         (env'', count'')
-> gatherVars env count (Loop n i) =
+> gatherVars env count (Loop _ n i) =
 >     let
 >         (env', count') = register env n count
 >         (env'', count'') = gatherVars env' count' i
@@ -219,12 +224,27 @@ Gather all variables used in the program.
 >     in
 >         register env' m count'
 
-Count the loops used in the program.
+Label every loop used in the program with a unique ID.
 
-> countLoops (Block []) = 0
-> countLoops (Block (i:rest)) = (countLoops i) + (countLoops $ Block rest)
-> countLoops (Loop _ i) = 1 + countLoops i
-> countLoops _ = 0
+> labelLoops (Block list) id =
+>     let
+>         (list', id') = labelList list id
+>     in
+>         (Block list', id')
+> labelLoops (Loop _ n i) id =
+>     let
+>         (i', id') = labelLoops i id
+>     in
+>         (Loop id n i', id'+1)
+> labelLoops other id = (other, id)
+
+> labelList [] id = ([], id)
+> labelList (x:xs) id =
+>     let
+>         (x', id') = labelLoops x id
+>         (xs', id'') = labelList xs id'
+>     in
+>         ((x':xs'), id'')
 
 Compiler
 --------
@@ -237,7 +257,7 @@ modulo limitations like 32-bit integers.
 > translate ast =
 >     let
 >         (env, count) = gatherVars empty 0 ast
->         numLoops = countLoops ast
+>         (ast', numLoops) = labelLoops ast 0
 >         varsBlock = makeVarsBlock env count numLoops
 >         codeBlock = genCode env ast
 >         dumpBlock = makeDumpBlock env
@@ -269,9 +289,9 @@ modulo limitations like 32-bit integers.
 > formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
 
 > makeLoopVarsBlock count 0 = ""
-> makeLoopVarsBlock count 1 = "[" ++ (show count) ++ "] int32 loop1"
+> makeLoopVarsBlock count 1 = "[" ++ (show count) ++ "] int32 loop0"
 > makeLoopVarsBlock count n =
->     "[" ++ (show count) ++ "] int32 loop" ++ (show n) ++ ", " ++
+>     "[" ++ (show count) ++ "] int32 loop" ++ (show (n-1)) ++ ", " ++
 >     makeLoopVarsBlock (count+1) (n-1)
 
 > makeDumpBlock env =
@@ -291,7 +311,7 @@ Generate code for the given AST.
 > genCode env (Block []) = ""
 > genCode env (Block (i:rest)) =
 >    (genCode env i) ++ (genCode env $ Block rest)
-> genCode env (Loop n i) =
+> genCode env (Loop id n i) =
 >    "  // TODO: implement loops!\n"
 > genCode env (AssignZero n) =
 >    let
