@@ -154,10 +154,12 @@ Environments
 >         Just value = Map.lookup name env
 >     in
 >         value
-
-Entries in env2 override those in env1.
-
-> merge env1 env2 = Map.union env2 env1
+> register env name count =
+>     case Map.lookup name env of
+>         Just value ->
+>             (env, count)
+>         Nothing ->
+>             (store env name count, count + 1)
 
 Evaluator
 ---------
@@ -211,23 +213,46 @@ modulo limitations like 32-bit integers.
 
 > makeVarsBlock ast =
 >     let
->         vars = gatherVars ast
+>         (env, count) = gatherVars empty 0 ast
+>         localsBlock = makeLocalsBlock $ Map.toAscList env
 >     in
->         "  .locals init () // " ++ (show vars) ++ "\n"
+>         "  .locals init (" ++ localsBlock ++ ")\n"
+
+> makeLocalsBlock [] = ""
+> makeLocalsBlock [(key, value)] =
+>     formatLocal key value
+> makeLocalsBlock ((key, value):rest) =
+>     (formatLocal key value) ++ ", " ++ makeLocalsBlock rest
+
+> formatLocal key value = "[" ++ (show value) ++ "] int32 " ++ key
 
 Gather all variables used in the program.
 
-> gatherVars (Block []) = empty 
-> gatherVars (Block (i:rest)) =
->     merge (gatherVars i) (gatherVars $ Block rest)
-> gatherVars (Loop n i) =
->     merge (singleton n 0) (gatherVars i)
-> gatherVars (AssignZero n) =
->     singleton n 0
-> gatherVars (AssignOther n m) =
->     store (singleton n 0) m 0
-> gatherVars (AssignIncr n m) =
->     store (singleton n 0) m 0
+> gatherVars env count (Block []) = (env, count)
+> gatherVars env count (Block (i:rest)) =
+>     let
+>         (env', count') = gatherVars env count i
+>         (env'', count'') = gatherVars env' count' $ Block rest
+>     in
+>         (env'', count'')
+> gatherVars env count (Loop n i) =
+>     let
+>         (env', count') = register env n count
+>         (env'', count'') = gatherVars env' count' i
+>     in
+>         (env'', count'')
+> gatherVars env count (AssignZero n) =
+>     register env n count
+> gatherVars env count (AssignOther n m) =
+>     let
+>         (env', count') = register env n count
+>     in
+>         register env' m count'
+> gatherVars env count (AssignIncr n m) =
+>     let
+>         (env', count') = register env n count
+>     in
+>         register env' m count'
 
 > compile s = case parse program "" s of
 >     Left perr -> show perr
