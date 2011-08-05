@@ -3,7 +3,7 @@ encoding: UTF-8
 PL-{GOTO}.NET
 =============
 
-Version 1.0
+Version 1.1
 
 Written by Chris Pressey of Cat's Eye Technologies.  This work is
 hereby placed into the public domain.
@@ -367,7 +367,7 @@ Generate code for the given AST.  This is the meat of the compiler.
 >        \  " ++ loopLabel ++ "_CHECK:\n\
 >        \  ldloc " ++ loopName ++ "\n\
 >        \  ldc.i4.0\n\
->        \  bge.s " ++ loopLabel ++ "_TOP\n\
+>        \  bgt.s " ++ loopLabel ++ "_TOP\n\
 >        \  // ---------- END " ++ loopLabel ++ "\n"
 > genCode env (AssignZero n) =
 >    "  ldc.i4.0\n\
