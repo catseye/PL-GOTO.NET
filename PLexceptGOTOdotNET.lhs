@@ -18,8 +18,12 @@ includes almost all practical algorithms -- can be expressed primitive
 recursively (although their primitive recursive version may be
 drastically less efficient.)
 
-The ultimate goal of this project is to compile PL-{GOTO} to MSIL (thus
-the name.)
+This module actually contains two implementations.  There is an interpreter
+written in Haskell which evaluates PL-{GOTO} programs directly.  In addition
+to this, there is a compiler which outputs MSIL code.  This output can be
+fed into `ilasm` to produce an executable .NET assembly which performs the
+same computation as the PL-{GOTO} program -- thus the name PL-{GOTO}.NET.
+The compiler does no optimization whatsoever of the generated code.
 
 > module PLexceptGOTOdotNET where
 
@@ -144,6 +148,8 @@ of the three variants, and we're going to use `try` to backtrack.
 >                 ) (strspc ";")
 >     return (Block l)
 
+Drivers for the parser.
+
 > pa s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show prog
@@ -156,7 +162,11 @@ of the three variants, and we're going to use `try` to backtrack.
 Environments
 ------------
 
+An environment binds names to values.  This is just a perfunctory
+abstraction around Haskell's Map datatype.
+
 > empty = Map.empty
+> toList = Map.toAscList
 > singleton = Map.singleton
 > store env name value = Map.insert name value env
 > fetch env name =
@@ -173,6 +183,9 @@ Environments
 
 Evaluator
 ---------
+
+The evaluator the environment that results from executing the given
+PL-{GOTO} program given as an AST in the given environment.
 
 > eval env (Block []) = env
 > eval env (Block (i:rest)) =
@@ -194,9 +207,11 @@ changed by the execution of an assignment statement."
 > eval env (AssignIncr n m) =
 >     store env n ((fetch env m) + 1)
 
+Drivers for the evaluator.
+
 > run s = case parse program "" s of
 >     Left perr -> show perr
->     Right prog -> show $ Map.toList $ eval empty prog
+>     Right prog -> show $ toList $ eval empty prog
 
 > runFile fileName = do
 >     programText <- readFile fileName
@@ -205,6 +220,9 @@ changed by the execution of an assignment statement."
 
 Static Analyzer
 ---------------
+
+The PL-{GOTO} language doesn't require any static analysis itself, but in
+order to generate MSIL code from it, it's very useful to do some.
 
 Label every loop used in the program with a unique ID.
 
@@ -227,6 +245,8 @@ Label every loop used in the program with a unique ID.
 >         (xs', id'') = labelList xs id'
 >     in
 >         ((x':xs'), id'')
+
+Helper function for the test suite.
 
 > testLoopLabeling s = case parse program "" s of
 >     Left perr -> show perr
@@ -262,6 +282,13 @@ program and produces a string containing an MSIL program
 (suitable as input to `ilasm`) which computes the same function,
 modulo limitations like 32-bit integers.
 
+The generated source consists of:
+* a prelude, which is the same for all programs;
+* a declaration of all the variables used in the program;
+* generated code corresponding to the computation proper;
+* a set of statements to display the final values of all variables; and
+* a postlude, which is the same for all programs.
+
 > translate ast =
 >     let
 >         (ast', _) = labelLoops ast 0
@@ -287,7 +314,7 @@ the maximum stack depth here.
 
 > makeVarsBlock env =
 >     let
->         localVarsBlock = makeLocalVarsBlock $ Map.toAscList env
+>         localVarsBlock = makeLocalVarsBlock $ toList env
 >     in
 >         "  .locals init (" ++ localVarsBlock ++ ")\n"
 
@@ -301,7 +328,7 @@ the maximum stack depth here.
 
 > makeDumpBlock env =
 >     let
->         dumps = map (formatDump) (Map.toAscList env)
+>         dumps = map (formatDump) (toList env)
 >     in
 >         foldl (++) "" dumps
 
@@ -313,7 +340,7 @@ the maximum stack depth here.
 >                          \  call instance string [mscorlib]System.Int32::ToString()\n\
 >                          \  call void [mscorlib]System.Console::WriteLine(string)\n"
 
-Generate code for the given AST.
+Generate code for the given AST.  This is the meat of the compiler.
 
 > genCode env (Block []) = ""
 > genCode env (Block (i:rest)) =
@@ -340,7 +367,6 @@ Generate code for the given AST.
 >        \  ldc.i4.0\n\
 >        \  bge.s " ++ loopLabel ++ "_TOP\n\
 >        \  // ---------- END " ++ loopLabel ++ "\n"
-
 > genCode env (AssignZero n) =
 >    "  ldc.i4.0\n\
 >    \  stloc " ++ n ++ "\n"
