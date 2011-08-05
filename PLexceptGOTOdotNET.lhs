@@ -3,6 +3,8 @@ encoding: UTF-8
 PL-{GOTO}.NET
 =============
 
+Version 1.0
+
 Written by Chris Pressey of Cat's Eye Technologies.  This work is
 hereby placed into the public domain.
 
