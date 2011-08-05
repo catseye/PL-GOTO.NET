@@ -1,4 +1,12 @@
-> -- encoding: UTF-8
+encoding: UTF-8
+
+Test Suite for PL-{GOTO}.NET
+============================
+
+This test suite is written in the format of Falderal 0.2.  It is far from
+exhaustive, but provides a basic sanity check that the language we've
+implemented comes close to PL-{GOTO}.
+
 > module Tests where
 
 > import qualified Test.Falderal.Runner as Runner
@@ -63,6 +71,17 @@ PL-{GOTO} Evaluation
 |     END;
 | END;
 = [("k",10),("m",4),("n",4)]
+
+Changing the value of a loop variable inside the loop does not change
+the number of times the loop executes.
+
+| n ← 0; n ← n + 1; n ← n + 1; n ← n + 1; n ← n + 1;
+| m ← 0;
+| LOOP n;
+|     n ← 0; n ← n + 1;
+|     m ← m + 1;
+| END;
+= [("m",4),("n",1)]
 
 Loop Labeling
 -------------
