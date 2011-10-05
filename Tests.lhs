@@ -3,23 +3,14 @@ encoding: UTF-8
 Test Suite for PL-{GOTO}.NET
 ============================
 
-This test suite is written in the format of Falderal 0.2.  It is far from
+This test suite is written in the format of Falderal 0.3.  It is far from
 exhaustive, but provides a basic sanity check that the language we've
 implemented comes close to PL-{GOTO}.
 
-> module Tests where
-
-> import qualified Test.Falderal.Runner as Runner
-> import PLexceptGOTOdotNET
-
-> test = Runner.run ["Tests.lhs"] [] [
->              ("PL-{GOTO} Parsing", pa),
->              ("PL-{GOTO} Evaluation", run),
->              ("Loop Labeling", testLoopLabeling)
->            ]
-
 PL-{GOTO} Parsing
 -----------------
+
+-> Tests for Haskell function PLexceptGOTOdotNET:pa
 
 | n ← 0;
 = Block [AssignZero "n"]
@@ -49,6 +40,8 @@ It's perfectly valid to have variables called LOOP and END.
 
 PL-{GOTO} Evaluation
 --------------------
+
+-> Tests for Haskell function PLexceptGOTOdotNET:run
 
 | n ← 0;
 = [("n",0)]
@@ -85,6 +78,8 @@ the number of times the loop executes.
 
 Loop Labeling
 -------------
+
+-> Tests for Haskell function PLexceptGOTOdotNET:testLoopLabeling
 
 | n ← 0; m ← 0; LOOP n;
 |     LOOP m;
