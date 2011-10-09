@@ -1,6 +1,9 @@
 #!/bin/sh
-if [ "${FALDERAL}x" = "x" ]; then
-    FALDERAL=../falderal/
-fi
-ghc -i$FALDERAL $FALDERAL/Test/Falderal/Driver.hs -e 'format "haskell" "PLexceptGOTOdotNET.falderal"' > GeneratedFalderalTests.hs
-ghc -i$FALDERAL GeneratedFalderalTests.hs -e testModule
+
+# This assumes Falderal 0.4 is installed.  The easiest way to do this is to
+# install it as a Cabal package:
+#   $ hg clone https://bitbucket.org/catseye/falderal
+#   $ cd falderal
+#   $ cabal install --prefix=$HOME --user
+
+falderal test standard PLexceptGOTOdotNET.falderal
