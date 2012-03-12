@@ -285,6 +285,7 @@ program and produces a string containing an MSIL program
 modulo limitations like 32-bit integers.
 
 The generated source consists of:
+
 * a prelude, which is the same for all programs;
 * a declaration of all the variables used in the program;
 * generated code corresponding to the computation proper;
