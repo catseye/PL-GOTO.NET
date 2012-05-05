@@ -1,5 +1,3 @@
-encoding: UTF-8
-
 PL-{GOTO}.NET
 =============
 
@@ -50,19 +48,19 @@ Grammar for the full (but not "extended") PL language, from the book:
 
 Sample code from the book:
 
-    V ← 0;
-    LOOP W;
-        LOOP X;
+        V ← 0;
+        LOOP W;
+            LOOP X;
+                V ← V + 1;
+            END;
+            GOTO L;
+        END;
+        LOOP Y;
             V ← V + 1;
         END;
-        GOTO L;
-    END;
-    LOOP Y;
-        V ← V + 1;
-    END;
-L:  LOOP Z;
-        V ← V + 1;
-    END;
+    L:  LOOP Z;
+            V ← V + 1;
+        END;
 
 Since we are implementing PL-{GOTO}, we can simplify the grammar; we do not
 accept GOTO instructions or labels.  The "label instruction" production
@@ -286,11 +284,11 @@ modulo limitations like 32-bit integers.
 
 The generated source consists of:
 
-* a prelude, which is the same for all programs;
-* a declaration of all the variables used in the program;
-* generated code corresponding to the computation proper;
-* a set of statements to display the final values of all variables; and
-* a postlude, which is the same for all programs.
+*   a prelude, which is the same for all programs;
+*   a declaration of all the variables used in the program;
+*   generated code corresponding to the computation proper;
+*   a set of statements to display the final values of all variables; and
+*   a postlude, which is the same for all programs.
 
 > translate ast =
 >     let
