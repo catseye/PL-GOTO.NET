@@ -27,6 +27,7 @@ The compiler does no optimization whatsoever of the generated code.
 
 > module PLexceptGOTOdotNET where
 
+> import System.IO
 > import Text.ParserCombinators.Parsec
 > import qualified Data.Map as Map
 
@@ -150,14 +151,18 @@ of the three variants, and we're going to use `try` to backtrack.
 
 Drivers for the parser.
 
+> workOnFile fn fileName = do
+>     handle <- openFile fileName ReadMode
+>     hSetEncoding handle utf8
+>     contents <- hGetContents handle
+>     outputText <- return $ fn contents
+>     putStrLn outputText
+
 > pa s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show prog
 
-> parseFile fileName = do
->     programText <- readFile fileName
->     outputText <- return $ pa programText
->     putStrLn outputText
+> parseFile = workOnFile pa
 
 Environments
 ------------
@@ -213,10 +218,7 @@ Drivers for the evaluator.
 >     Left perr -> show perr
 >     Right prog -> show $ toList $ eval empty prog
 
-> runFile fileName = do
->     programText <- readFile fileName
->     outputText <- return $ run programText
->     putStrLn outputText
+> runFile = workOnFile run
 
 Static Analyzer
 ---------------
@@ -246,11 +248,13 @@ Label every loop used in the program with a unique ID.
 >     in
 >         ((x':xs'), id'')
 
-Helper function for the test suite.
+Helper functions for the test suite.
 
-> testLoopLabeling s = case parse program "" s of
+> loopLabel s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show (labelLoops prog 0)
+
+> loopLabelFile = workOnFile loopLabel
 
 Gather all variables used in the program.  This includes internal variables
 to be used as loop counters.  This assumes loops have already been labeled.
@@ -386,7 +390,4 @@ Driver functions for compiler.
 >     Left perr -> show perr
 >     Right prog -> translate prog
 
-> compileFile fileName = do
->     programText <- readFile fileName
->     outputText <- return $ compile programText
->     putStrLn outputText
+> compileFile = workOnFile compile
