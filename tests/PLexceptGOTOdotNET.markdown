@@ -12,7 +12,7 @@ PL-{GOTO} Parsing
 
     -> Functionality "Parse PL-{GOTO} Program" is implemented by
     -> shell command
-    -> "ghc PLexceptGOTOdotNET.lhs -e "workOnFile pa \"%(test-file)\"""
+    -> "ghc src/PLexceptGOTOdotNET.lhs -e "workOnFile pa \"%(test-file)\"""
 
     | n ← 0;
     = Block [AssignZero "n"]
@@ -47,7 +47,7 @@ PL-{GOTO} Evaluation
 
     -> Functionality "Evaluate PL-{GOTO} Program" is implemented by
     -> shell command
-    -> "ghc PLexceptGOTOdotNET.lhs -e "runFile \"%(test-file)\"""
+    -> "ghc src/PLexceptGOTOdotNET.lhs -e "runFile \"%(test-file)\"""
 
     | n ← 0;
     = [("n",0)]
@@ -89,7 +89,7 @@ Loop Labeling
 
     -> Functionality "Label PL-{GOTO} Loops" is implemented by
     -> shell command
-    -> "ghc PLexceptGOTOdotNET.lhs -e "loopLabelFile \"%(test-file)\"""
+    -> "ghc src/PLexceptGOTOdotNET.lhs -e "loopLabelFile \"%(test-file)\"""
 
     | n ← 0; m ← 0; LOOP n;
     |     LOOP m;

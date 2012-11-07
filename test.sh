@@ -1,3 +1,3 @@
 #!/bin/sh
 
-falderal test PLexceptGOTOdotNET.markdown
+falderal test tests/PLexceptGOTOdotNET.markdown
