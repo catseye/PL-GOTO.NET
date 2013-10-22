@@ -40,6 +40,22 @@ It's perfectly valid to have variables called LOOP and END.
     | END ← 0; LOOP END; END ← END + 1; END;
     = Block [AssignZero "END",Loop 0 "END" (Block [AssignIncr "END" "END"])]
 
+Loop Labeling
+-------------
+
+    -> Tests for functionality "Label PL-{GOTO} Loops"
+
+    -> Functionality "Label PL-{GOTO} Loops" is implemented by
+    -> shell command
+    -> "ghc src/PLexceptGOTOdotNET.lhs -e "loopLabelFile \"%(test-file)\"""
+
+    | n ← 0; m ← 0; LOOP n;
+    |     LOOP m;
+    |         n ← 0; 
+    |     END;
+    | END;
+    = (Block [AssignZero "n",AssignZero "m",Loop 1 "n" (Block [Loop 0 "m" (Block [AssignZero "n"])])],2)
+
 PL-{GOTO} Evaluation
 --------------------
 
@@ -47,10 +63,13 @@ PL-{GOTO} Evaluation
 
     -> Functionality "Evaluate PL-{GOTO} Program" is implemented by
     -> shell command
-    -> "ghc src/PLexceptGOTOdotNET.lhs -e "runFile \"%(test-file)\"""
+    -> "bin/PLexceptGOTOdotNET interpret %(test-file)"
 
     | n ← 0;
     = [("n",0)]
+
+    | n ← 0; m ← n + 1; n ← m + 1;
+    = [("m",1),("n",2)]
 
     | n ← 0; LOOP n; m ← n; END;
     = [("n",0)]
@@ -82,18 +101,57 @@ the number of times the loop executes.
     | END;
     = [("m",4),("n",1)]
 
-Loop Labeling
--------------
+Compiling
+---------
 
-    -> Tests for functionality "Label PL-{GOTO} Loops"
+    -> Tests for functionality "Compile PL-{GOTO} to .NET Executable"
 
-    -> Functionality "Label PL-{GOTO} Loops" is implemented by
+    -> Functionality "Compile PL-{GOTO} to .NET Executable" is implemented by
     -> shell command
-    -> "ghc src/PLexceptGOTOdotNET.lhs -e "loopLabelFile \"%(test-file)\"""
+    -> "bin/PLexceptGOTOdotNET run %(test-file)"
 
-    | n ← 0; m ← 0; LOOP n;
+(Ideally we should just re-use the tests above for "PL-{GOTO} Evaluation", but
+unfortunately the programs produced by the compiler have a different output
+syntax right now.  Also, the compiler puts all variables in the output
+dictionary, with unassigned variables given the value 0, instead of being not
+present in the output dictionary.)
+
+    | n ← 0;
+    = n=0
+
+    | n ← 0; m ← n + 1; n ← m + 1;
+    = m=1
+    = n=2
+
+    | n ← 0; LOOP n; m ← n; END;
+    = m=0
+    = n=0
+
+    | n ← 0; n ← n + 1; LOOP n; m ← n; END;
+    = m=1
+    = n=1
+
+    | m ← 0; n ← 0; n ← n + 1; n ← n + 1; LOOP n; m ← m + 1; END;
+    = m=2
+    = n=2
+
+    | n ← 0; n ← n + 1; n ← n + 1; n ← n + 1; n ← n + 1;
+    | m ← 0; k ← 0;
+    | LOOP n;
+    |     m ← m + 1;
     |     LOOP m;
-    |         n ← 0; 
+    |         k ← k + 1;
     |     END;
     | END;
-    = (Block [AssignZero "n",AssignZero "m",Loop 1 "n" (Block [Loop 0 "m" (Block [AssignZero "n"])])],2)
+    = k=10
+    = m=4
+    = n=4
+
+    | n ← 0; n ← n + 1; n ← n + 1; n ← n + 1; n ← n + 1;
+    | m ← 0;
+    | LOOP n;
+    |     n ← 0; n ← n + 1;
+    |     m ← m + 1;
+    | END;
+    = m=4
+    = n=1

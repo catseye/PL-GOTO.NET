@@ -1,0 +1,39 @@
+#!/bin/sh
+# Encoding: UTF-8
+
+# For now, you can only run this script from the distribution's root directory.
+
+if [ x"$1" = 'xinterpret' ]; then
+    ghc src/PLexceptGOTOdotNET.lhs -e "runFile \"$2\""
+elif [ x"$1" = 'xtranslate' ]; then
+    ghc src/PLexceptGOTOdotNET.lhs -e "compileFile \"$2\"" >$3
+elif [ x"$1" = 'xcompile' ]; then
+    ghc src/PLexceptGOTOdotNET.lhs -e "compileFile \"$2\"" >tmp.msil
+    ilasm tmp.msil /output:$3 >/dev/null
+    chmod 755 $3
+    rm tmp.msil
+elif [ x"$1" = 'xrun' ]; then
+    ghc src/PLexceptGOTOdotNET.lhs -e "compileFile \"$2\"" >tmp.msil
+    ilasm tmp.msil /output:program.exe >/dev/null
+    chmod 755 program.exe
+    rm tmp.msil
+    ./program.exe
+    rm program.exe
+else
+    echo <<EOF
+usage:
+    PLexceptGOTOdotNET interpret file.pl-g
+    --- interpret a PL-{GOTO} program directly
+
+    PLexceptGOTOdotNET translate file.pl-g file.msil
+    --- produce a CIL assembly source from a PL-{GOTO} program
+
+    PLexceptGOTOdotNET compile file.pl-g file.exe
+    --- produce a .NET executable for a PL-{GOTO} program
+
+    PLexceptGOTOdotNET run file.pl-g
+    --- produce a .NET executable for a program, then immediately run it
+
+EOF
+    exit 2
+fi
