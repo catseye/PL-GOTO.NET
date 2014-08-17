@@ -104,11 +104,11 @@ the number of times the loop executes.
 Compiling
 ---------
 
-    -> Tests for functionality "Compile PL-{GOTO} to .NET Executable"
+    -> Tests for functionality "Compile PL-{GOTO} to .NET Executable and Run it"
 
-    -> Functionality "Compile PL-{GOTO} to .NET Executable" is implemented by
-    -> shell command
-    -> "bin/PLexceptGOTOdotNET run %(test-file)"
+    -> Functionality "Compile PL-{GOTO} to .NET Executable and Run it"
+    -> is implemented by shell command
+    -> "bin/PLexceptGOTOdotNET-run %(test-file)"
 
 (Ideally we should just re-use the tests above for "PL-{GOTO} Evaluation", but
 unfortunately the programs produced by the compiler have a different output

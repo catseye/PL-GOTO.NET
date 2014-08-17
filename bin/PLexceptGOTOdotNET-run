@@ -1,0 +1,10 @@
+#!/bin/sh
+
+THIS=`realpath $0`
+HERE=`dirname $THIS`
+$HERE/PLexceptGOTOdotNET translate $1 >tmp.msil
+ilasm tmp.msil /output:program.exe >/dev/null
+chmod 755 program.exe
+rm tmp.msil
+./program.exe
+rm program.exe
