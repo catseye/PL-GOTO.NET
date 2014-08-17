@@ -1,2 +1,5 @@
 *.msil
 *.exe
+*.hi
+*.o
+bin/PLexceptGOTOdotNET
