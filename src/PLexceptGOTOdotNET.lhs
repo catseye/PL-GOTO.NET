@@ -153,7 +153,7 @@ Drivers for the parser.
 
 > workOnFile fn fileName = do
 >     handle <- openFile fileName ReadMode
->     hSetEncoding handle utf8
+>     -- hSetEncoding handle utf8
 >     contents <- hGetContents handle
 >     outputText <- return $ fn contents
 >     putStrLn outputText
