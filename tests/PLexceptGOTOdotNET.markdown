@@ -1,7 +1,7 @@
 Test Suite for PL-{GOTO}.NET
 ============================
 
-This test suite is written in the format of Falderal 0.7.  It is far from
+This test suite is written in the format of Falderal 0.9.  It is far from
 exhaustive, but provides a basic sanity check that the language we've
 implemented comes close to PL-{GOTO}.
 
@@ -12,7 +12,7 @@ PL-{GOTO} Parsing
 
     -> Functionality "Parse PL-{GOTO} Program" is implemented by
     -> shell command
-    -> "bin/PLexceptGOTOdotNET parse %(test-file)"
+    -> "bin/PLexceptGOTOdotNET parse %(test-body-file)"
 
     | n ← 0;
     = Block [AssignZero "n"]
@@ -47,7 +47,7 @@ Loop Labeling
 
     -> Functionality "Label PL-{GOTO} Loops" is implemented by
     -> shell command
-    -> "bin/PLexceptGOTOdotNET labelloops %(test-file)"
+    -> "bin/PLexceptGOTOdotNET labelloops %(test-body-file)"
 
     | n ← 0; m ← 0; LOOP n;
     |     LOOP m;
@@ -63,7 +63,7 @@ PL-{GOTO} Evaluation
 
     -> Functionality "Evaluate PL-{GOTO} Program" is implemented by
     -> shell command
-    -> "bin/PLexceptGOTOdotNET interpret %(test-file)"
+    -> "bin/PLexceptGOTOdotNET interpret %(test-body-file)"
 
     | n ← 0;
     = [("n",0)]

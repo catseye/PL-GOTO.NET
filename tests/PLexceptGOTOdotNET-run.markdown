@@ -1,7 +1,7 @@
 Test Suite for PL-{GOTO}.NET
 ============================
 
-This test suite is written in the format of Falderal 0.7.  It is far from
+This test suite is written in the format of Falderal 0.9.  It is far from
 exhaustive, but provides a basic sanity check that the language we've
 implemented comes close to PL-{GOTO}.
 
@@ -12,7 +12,7 @@ Compiling
 
     -> Functionality "Compile PL-{GOTO} to .NET Executable and Run it"
     -> is implemented by shell command
-    -> "bin/PLexceptGOTOdotNET-run %(test-file)"
+    -> "bin/PLexceptGOTOdotNET-run %(test-body-file)"
 
 (Ideally we should just re-use the tests above for "PL-{GOTO} Evaluation", but
 unfortunately the programs produced by the compiler have a different output
