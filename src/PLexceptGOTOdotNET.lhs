@@ -25,6 +25,8 @@ fed into `ilasm` to produce an executable .NET assembly which performs the
 same computation as the PL-{GOTO} program -- thus the name PL-{GOTO}.NET.
 The compiler does no optimization whatsoever of the generated code.
 
+> {-# LANGUAGE FlexibleContexts #-}
+
 > module PLexceptGOTOdotNET where
 
 > import System.IO
