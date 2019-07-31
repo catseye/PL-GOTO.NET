@@ -15,4 +15,4 @@ main = do
         ["translate", fileName] ->
             compileFile fileName
         _ ->
-            putStrLn "usage: PLexceptGOTOdotNET (parse|labelloops|interpret|translate|compile|run) filename.pl-g"
+            putStrLn "usage: PLexceptGOTOdotNET (parse|labelloops|interpret|translate) filename.pl-g"
