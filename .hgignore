@@ -1,7 +1,0 @@
-syntax: glob
-
-*.msil
-*.exe
-*.hi
-*.o
-bin/PLexceptGOTOdotNET

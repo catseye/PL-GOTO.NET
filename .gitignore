@@ -2,4 +2,5 @@
 *.exe
 *.hi
 *.o
+*.so
 bin/PLexceptGOTOdotNET
