@@ -10,10 +10,6 @@ PL-{GOTO} Parsing
 
     -> Tests for functionality "Parse PL-{GOTO} Program"
 
-    -> Functionality "Parse PL-{GOTO} Program" is implemented by
-    -> shell command
-    -> "bin/PLexceptGOTOdotNET parse %(test-body-file)"
-
     | n ← 0;
     = Block [AssignZero "n"]
 
@@ -45,10 +41,6 @@ Loop Labeling
 
     -> Tests for functionality "Label PL-{GOTO} Loops"
 
-    -> Functionality "Label PL-{GOTO} Loops" is implemented by
-    -> shell command
-    -> "bin/PLexceptGOTOdotNET labelloops %(test-body-file)"
-
     | n ← 0; m ← 0; LOOP n;
     |     LOOP m;
     |         n ← 0; 
@@ -61,10 +53,6 @@ PL-{GOTO} Evaluation
 
     -> Tests for functionality "Evaluate PL-{GOTO} Program"
 
-    -> Functionality "Evaluate PL-{GOTO} Program" is implemented by
-    -> shell command
-    -> "bin/PLexceptGOTOdotNET interpret %(test-body-file)"
-
     | n ← 0;
     = n=0
 
@@ -72,7 +60,8 @@ PL-{GOTO} Evaluation
     = m=1
     = n=2
 
-    | n ← 0; LOOP n; m ← n; END;
+    | m ← 0; n ← 0; LOOP n; m ← n; END;
+    = m=0
     = n=0
 
     | n ← 0; n ← n + 1; LOOP n; m ← n; END;
@@ -106,3 +95,11 @@ the number of times the loop executes.
     | END;
     = m=4
     = n=1
+
+The interpreter and the compiled program currently have different behaviour
+for this case.  The compiled program never executes the loop, so never sees
+`m`, so doesn't introduce `m` into the environment, so doesn't print `m=0`.
+
+    >   | n ← 0; LOOP n; m ← n; END;
+    >   = m=0
+    >   = n=0

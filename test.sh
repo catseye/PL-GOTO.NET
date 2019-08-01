@@ -1,12 +1,11 @@
 #!/bin/sh
 
-echo "Building..."
 ./build.sh || exit 1
-echo "Testing frontend and interpreter..."
-falderal tests/PLexceptGOTOdotNET.markdown || exit 1
-if [ `which ilasm`x = x ]; then
-    echo "ilasm not found, skipping compiler tests."
+APPLIANCES="tests/appliances/PLexceptGOTOdotNET.md"
+ILASM=ilasm
+if [ `which $ILASM`x = x ]; then
+    echo "NOTE: $ILASM not found, skipping compiler tests."
 else
-    echo "Testing compiler..."
-    falderal tests/PLexceptGOTOdotNET-run.markdown || exit 1
+    APPLIANCES="$APPLIANCES tests/appliances/PLexceptGOTOdotNET-loadngo.md"
 fi
+falderal $APPLIANCES tests/PLexceptGOTOdotNET.markdown || exit 1

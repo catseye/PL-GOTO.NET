@@ -1,7 +1,7 @@
 PL-{GOTO}.NET
 =============
 
-Version 1.1
+Version 1.2
 
 Written by Chris Pressey of Cat's Eye Technologies.  This work is
 hereby placed into the public domain.
