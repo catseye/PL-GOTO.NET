@@ -1,6 +1,7 @@
 module Main where
 
 import System.Environment
+import System.IO
 import PLexceptGOTOdotNET
 
 main = do
@@ -9,10 +10,17 @@ main = do
         ["parse", fileName] ->
             workOnFile pa fileName
         ["labelloops", fileName] ->
-            loopLabelFile fileName
+            workOnFile loopLabel fileName
         ["interpret", fileName] ->
-            runFile fileName
+            workOnFile run fileName
         ["translate", fileName] ->
-            compileFile fileName
+            workOnFile compile fileName
         _ ->
             putStrLn "usage: PLexceptGOTOdotNET (parse|labelloops|interpret|translate) filename.pl-g"
+
+workOnFile fn fileName = do
+    handle <- openFile fileName ReadMode
+    -- hSetEncoding handle utf8
+    contents <- hGetContents handle
+    outputText <- return $ fn contents
+    putStrLn outputText

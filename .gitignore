@@ -1,5 +1,7 @@
 *.msil
+*.cil
 *.exe
 *.hi
+*.jsmod
 *.o
 *.so

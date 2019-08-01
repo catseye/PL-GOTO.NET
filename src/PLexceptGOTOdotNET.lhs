@@ -29,7 +29,6 @@ The compiler does no optimization whatsoever of the generated code.
 
 > module PLexceptGOTOdotNET where
 
-> import System.IO
 > import Text.ParserCombinators.Parsec
 > import qualified Data.Map as Map
 
@@ -153,18 +152,9 @@ of the three variants, and we're going to use `try` to backtrack.
 
 Drivers for the parser.
 
-> workOnFile fn fileName = do
->     handle <- openFile fileName ReadMode
->     -- hSetEncoding handle utf8
->     contents <- hGetContents handle
->     outputText <- return $ fn contents
->     putStrLn outputText
-
 > pa s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show prog
-
-> parseFile = workOnFile pa
 
 Environments
 ------------
@@ -223,8 +213,6 @@ Drivers for the evaluator.
 > formatEnv [] = ""
 > formatEnv ((k, v):rest) = k ++ "=" ++ (show v) ++ "\n" ++ formatEnv rest
 
-> runFile = workOnFile run
-
 Static Analyzer
 ---------------
 
@@ -258,8 +246,6 @@ Helper functions for the test suite.
 > loopLabel s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> show (labelLoops prog 0)
-
-> loopLabelFile = workOnFile loopLabel
 
 Gather all variables used in the program.  This includes internal variables
 to be used as loop counters.  This assumes loops have already been labeled.
@@ -394,5 +380,3 @@ Driver functions for compiler.
 > compile s = case parse program "" s of
 >     Left perr -> show perr
 >     Right prog -> translate prog
-
-> compileFile = workOnFile compile
