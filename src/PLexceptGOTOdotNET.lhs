@@ -218,7 +218,10 @@ Drivers for the evaluator.
 
 > run s = case parse program "" s of
 >     Left perr -> show perr
->     Right prog -> show $ toList $ eval empty prog
+>     Right prog -> formatEnv $ toList $ eval empty prog
+
+> formatEnv [] = ""
+> formatEnv ((k, v):rest) = k ++ "=" ++ (show v) ++ "\n" ++ formatEnv rest
 
 > runFile = workOnFile run
 

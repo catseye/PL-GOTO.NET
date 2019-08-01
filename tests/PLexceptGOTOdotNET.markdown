@@ -66,19 +66,22 @@ PL-{GOTO} Evaluation
     -> "bin/PLexceptGOTOdotNET interpret %(test-body-file)"
 
     | n ← 0;
-    = [("n",0)]
+    = n=0
 
     | n ← 0; m ← n + 1; n ← m + 1;
-    = [("m",1),("n",2)]
+    = m=1
+    = n=2
 
     | n ← 0; LOOP n; m ← n; END;
-    = [("n",0)]
+    = n=0
 
     | n ← 0; n ← n + 1; LOOP n; m ← n; END;
-    = [("m",1),("n",1)]
+    = m=1
+    = n=1
 
     | m ← 0; n ← 0; n ← n + 1; n ← n + 1; LOOP n; m ← m + 1; END;
-    = [("m",2),("n",2)]
+    = m=2
+    = n=2
 
     | n ← 0; n ← n + 1; n ← n + 1; n ← n + 1; n ← n + 1;
     | m ← 0; k ← 0;
@@ -88,7 +91,9 @@ PL-{GOTO} Evaluation
     |         k ← k + 1;
     |     END;
     | END;
-    = [("k",10),("m",4),("n",4)]
+    = k=10
+    = m=4
+    = n=4
 
 Changing the value of a loop variable inside the loop does not change
 the number of times the loop executes.
@@ -99,4 +104,5 @@ the number of times the loop executes.
     |     n ← 0; n ← n + 1;
     |     m ← m + 1;
     | END;
-    = [("m",4),("n",1)]
+    = m=4
+    = n=1
