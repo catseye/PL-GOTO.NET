@@ -1,9 +1,11 @@
 Test Suite for PL-{GOTO}.NET
 ============================
 
-This test suite is written in the format of Falderal 0.9.  It is far from
+This test suite is written in [Falderal][] format.  It is far from
 exhaustive, but provides a basic sanity check that the language we've
 implemented comes close to PL-{GOTO}.
+
+[Falderal]: https://catseye.tc/node/Falderal
 
 PL-{GOTO} Parsing
 -----------------
