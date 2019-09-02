@@ -4,6 +4,7 @@ ILASM=ilasm
 THIS=`realpath $0`
 HERE=`dirname $THIS`
 $HERE/PLexceptGOTOdotNET translate $1 >tmp.cil
+cat tmp.cil
 $ILASM tmp.cil /output:program.exe >/dev/null
 chmod 755 program.exe
 rm tmp.cil
