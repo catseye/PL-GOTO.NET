@@ -1,6 +1,5 @@
 module Main where
 
-import Haste
 import Haste.DOM (withElems, getValue, setProp)
 import Haste.Events (onEvent, MouseEvent(Click))
 
