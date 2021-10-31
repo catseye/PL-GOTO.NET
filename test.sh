@@ -1,6 +1,5 @@
 #!/bin/sh
 
-./build.sh || exit 1
 APPLIANCES="tests/appliances/PLexceptGOTOdotNET.md"
 ILASM=ilasm
 if [ `which $ILASM`x = x ]; then
