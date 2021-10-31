@@ -7,4 +7,4 @@ if [ `which $ILASM`x = x ]; then
 else
     APPLIANCES="$APPLIANCES tests/appliances/PLexceptGOTOdotNET-loadngo.md"
 fi
-falderal $APPLIANCES tests/PLexceptGOTOdotNET.markdown || exit 1
+falderal $APPLIANCES tests/PLexceptGOTOdotNET.md || exit 1

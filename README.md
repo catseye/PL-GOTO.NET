@@ -12,7 +12,7 @@ The source code of the compiler is in the file
 [`src/PLexceptGOTOdotNET.lhs`](src/PLexceptGOTOdotNET.lhs).  Being written
 in literate Haskell, it also serves as documentation for the compiler.
 
-A [test suite](tests/PLexceptGOTOdotNET.markdown) written in
+A [test suite](tests/PLexceptGOTOdotNET.md) written in
 [Falderal][] format can be found in the `tests` directory and
 can be run with the `test.sh` script in the root directory.
 
